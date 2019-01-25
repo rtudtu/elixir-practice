@@ -15,39 +15,49 @@ defmodule Practice.Calc do
     Enum.map(toks, fn(tok) -> tag_token(tok) end)
   end
 
-  def eval(toks) do
-    eval_help(toks, ["*", "/", "+", "-"], 0)
+  def eval_mul_div([{:num, num1}, {:op, "*"}, {:num, num2} | rest]) do
+    #[{:num, num1 * num2}] ++ eval_mul_div(rest)
+    eval_mul_div([{:num, num1 * num2}] ++ rest)
   end
 
-  def eval_help(toks, ops, i) do
-    cond do
-      length(toks) == 1 && length(ops) == 0 -> List.first(toks) |> elem(1)
-      i >= length(toks) -> eval_help(toks, List.delete_at(ops, 0), 0)
-      Enum.at(toks, i) |> elem(1) == List.first(ops) -> 
-        eval_help(evaluate(toks, i), ops, 0)
-      true -> eval_help(toks, ops, i + 1)
-    end
+  def eval_mul_div([{:num, num1}, {:op, "/"}, {:num, num2} | rest]) do
+    #[{:num, num1 / num2}] ++ eval_mul_div(rest)
+    eval_mul_div([{:num, num1 / num2}] ++ rest)
   end
 
-  def evaluate(toks, i) do
-    num1 = Enum.at(toks, i - 1) |> elem(1)
-    num2 = Enum.at(toks, i + 1) |> elem(1)
-    op = Enum.at(toks, i) |> elem(1)
-    toks = List.delete_at(toks, i + 1)
-    toks = List.delete_at(toks, i)
-    toks = List.delete_at(toks, i - 1)
-    cond do
-      op == "*" -> List.insert_at(toks, i - 1, {:num, num1 * num2})
-      op == "/" -> List.insert_at(toks, i - 1, {:num, num1 / num2})
-      op == "+" -> List.insert_at(toks, i - 1, {:num, num1 + num2})
-      op == "-" -> List.insert_at(toks, i - 1, {:num, num1 - num2})
-    end  
+  def eval_mul_div([first | rest]) do
+    [first] ++ eval_mul_div(rest)
+  end
+
+  def eval_mul_div([]) do
+    []
+  end
+  
+  def eval_add_sub([{:num, num1}, {:op, "+"}, {:num, num2} | rest]) do
+    #[{:num, num1 + num2}] ++ eval_add_sub(rest)
+    eval_add_sub([{:num, num1 + num2}] ++ rest)
+  end
+
+  def eval_add_sub([{:num, num1}, {:op, "-"}, {:num, num2} | rest]) do
+    #[{:num, num1 - num2}] ++ eval_add_sub(rest)
+    eval_add_sub([{:num, num1 - num2}] ++ rest)
+  end
+
+  def eval_add_sub([first | rest]) do
+    [first] ++ eval_add_sub(rest)
+  end
+
+  def eval_add_sub([]) do
+    []
   end
 
   def calc(expr) do
     expr
     |> String.split(~r/\s+/)
     |> tag_tokens
-    |> eval
+    |> eval_mul_div
+    |> eval_add_sub
+    |> hd
+    |> elem(1)
   end
 end
